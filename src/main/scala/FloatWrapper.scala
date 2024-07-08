@@ -64,6 +64,8 @@ class FloatWrapper(expW: Int, mantW: Int, expBias: Int, num: Bits) {
     }
 
     def *(that: FloatWrapper): FloatWrapper = {
+        require(this.expW == that.exp.getWidth && this.mantW == that.mant.getWidth - 1, "Widths must match")
+
         val resultSign = this.sign ^ that.sign
         val resultExp = this.exp + that.exp - that.bias.U
         val resultMant = this.mant * that.mant  // width: 2*(mantW+1)
@@ -105,8 +107,7 @@ class FloatWrapper(expW: Int, mantW: Int, expBias: Int, num: Bits) {
     }
 
     def scale(factor: UInt): FloatWrapper = {
-        require(factor.getWidth == 8, "Shared exponent must be 8 bits long")
-        // TODO: remove bias from factor
+        require(factor.getWidth == SHARED_EXP_W, s"Shared exponent must be $SHARED_EXP_W bits long")
 
         new FloatWrapper(factor.getWidth, mantW, this.bias + EXP_BIAS(SHARED_EXP_W), Cat(
             sign, 
@@ -119,10 +120,10 @@ class FloatWrapper(expW: Int, mantW: Int, expBias: Int, num: Bits) {
         require(expW <= 8, "Exponent width must be less than or equal to 8 bits")
         require(mantW <= 23, "Mantissa width must be less than or equal to 23 bits")
 
-        new FloatWrapper(8, 23, EXP_BIAS(SHARED_EXP_W), Cat(
+        new FloatWrapper(8, 23, EXP_BIAS(8), Cat(
             sign,
             0.U((8 - expW).W),
-            exp,
+            exp - bias.U + EXP_BIAS(8).U,
             mant(mantW - 1, 0),
             0.U((23 - mantW).W)
         ))

@@ -226,4 +226,42 @@ class MXDspTest extends AnyFlatSpec with ChiselScalatestTester {
             dsp.io.multOut.elems(1).expect("b11111110".U)
         }
     }
+
+    "MXDsp" should "compute the dot product of two vectors with the same shared exponent" in {
+        test(new DspWrapper(2, 4, 3)) { dsp =>
+            // A = [ 1.001 * 2^0, 1.001 * 2^0 ]
+            dsp.io.a.sharedExp.poke(127.U)
+            dsp.io.a.elems(0).poke("b00111001".U)
+            dsp.io.a.elems(1).poke("b00111001".U)
+            // B = [ 1.001 * 2^0, 1.001 * 2^0]
+            dsp.io.b.sharedExp.poke(127.U)
+            dsp.io.b.elems(0).poke("b00111001".U)
+            dsp.io.b.elems(1).poke("b00111001".U)
+            dsp.clock.step(1)
+            // dotOut = 1.001^2 + 1.001^2 = 1.01 * 2^1
+            dsp.io.multOut.sharedExp.expect(119.U)
+            dsp.io.multOut.elems(0).expect("b01111010".U)
+            dsp.io.multOut.elems(1).expect("b01111010".U)
+            dsp.io.dotOut.expect("b01000000001000000000000000000000".U)
+        }
+    }
+
+    "MXDsp" should "compute the dot product of two vectors with different shared exponents" in {
+        test(new DspWrapper(2, 4, 3)) { dsp =>
+            // A = [ 1.001 * 2^1, 1.001 * 2^1 ]
+            dsp.io.a.sharedExp.poke(128.U)
+            dsp.io.a.elems(0).poke("b00111001".U)
+            dsp.io.a.elems(1).poke("b00111001".U)
+            // B = [ 1.001 * 2^0, 1.001 * 2^0]
+            dsp.io.b.sharedExp.poke(127.U)
+            dsp.io.b.elems(0).poke("b00111001".U)
+            dsp.io.b.elems(1).poke("b00111001".U)
+            dsp.clock.step(1)
+            // dotOut = 1.001^2 * 2^1 + 1.001^2 * 2^1 = 1.01 * 2^2
+            dsp.io.multOut.sharedExp.expect(120.U)
+            dsp.io.multOut.elems(0).expect("b01111010".U)
+            dsp.io.multOut.elems(1).expect("b01111010".U)
+            dsp.io.dotOut.expect("b01000000101000000000000000000000".U)
+        }
+    }
 }
