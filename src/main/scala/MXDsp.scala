@@ -11,13 +11,13 @@ class MXBundle(k: Int, expW: Int, mantW: Int) extends Bundle {
 
     def dotProduct(): Bits = {
         val fp32s = VecInit(elems.map{ elem => 
-            val float = new FloatWrapper(expW, mantW, elem)
+            val float = new FloatWrapper(expW, mantW, EXP_BIAS(expW), elem)
             float.scale(sharedExp).asFP32.asBits
         })
 
         fp32s.reduceTree{ case (a, b) => 
-            val floatA = new FloatWrapper(8, 23, a)
-            val floatB = new FloatWrapper(8, 23, b)
+            val floatA = new FloatWrapper(8, 23, EXP_BIAS(8), a)
+            val floatB = new FloatWrapper(8, 23, EXP_BIAS(8), b)
             (floatA + floatB).asBits
         }
     }
@@ -43,8 +43,8 @@ class ElementwiseOp(k: Int, expW: Int, mantW: Int, op: OpType) extends Module {
     })
 
     val out = VecInit((io.a.elems zip io.b.elems).map{ case (a, b) => 
-        val floatA = new FloatWrapper(expW, mantW, a)
-        val floatB = new FloatWrapper(expW, mantW, b)
+        val floatA = new FloatWrapper(expW, mantW, EXP_BIAS(expW), a)
+        val floatB = new FloatWrapper(expW, mantW, EXP_BIAS(expW), b)
         
         op match {
             case Add => (floatA.scale(io.a.sharedExp) + floatB.scale(io.b.sharedExp)).asBits
