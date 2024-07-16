@@ -264,4 +264,31 @@ class MXDspTest extends AnyFlatSpec with ChiselScalatestTester {
             dsp.io.dotOut.expect("b01000000101000000000000000000000".U)
         }
     }
+
+    "MXDsp" should "add two subnormal numbers" in {
+        test(new DspWrapper(1, 4, 3)) { dsp =>
+            // A = 0.001 * 2^-6
+            dsp.io.c.sharedExp.poke(127.U)
+            dsp.io.c.elems(0).poke("b00000001".U)
+            // B = 0.001 * 2^-6
+            dsp.io.d.sharedExp.poke(127.U)
+            dsp.io.d.elems(0).poke("b00000001".U)
+            dsp.io.adderInASel.poke(1.U)
+            dsp.clock.step(1)
+            dsp.io.addOut.sharedExp.expect(111.U)
+            dsp.io.addOut.elems(0).expect("b01111000".U)
+
+            // A = 0.001 * 2^-6 * 2^-127
+            dsp.io.c.sharedExp.poke(0.U)
+            dsp.io.c.elems(0).poke("b00000001".U)
+            // B = 0.001 * 2^-6 * 2^-127
+            dsp.io.d.sharedExp.poke(0.U)
+            dsp.io.d.elems(0).poke("b00000001".U)
+            dsp.io.adderInASel.poke(1.U)
+            dsp.clock.step(1)
+            // print(dsp.exposedAdderOut.peek())
+            dsp.io.addOut.sharedExp.expect(0.U)
+            dsp.io.addOut.elems(0).expect("b00000010".U)
+        }
+    }
 }
